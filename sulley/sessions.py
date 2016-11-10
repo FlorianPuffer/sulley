@@ -17,6 +17,126 @@ import pgraph
 import sex
 import primitives
 
+import bluetooth._bluetooth as bt
+import logging
+import sys
+import socket,struct,array
+from ctypes import *
+import socket,time
+
+########################################################################################################################
+#rebuild struct (http://bluez.sourcearchive.com/documentation/4.89/structsockaddr__hci.html)
+class sockaddr_hci(Structure):
+    _fields_ = [
+        ("sin_family",      c_ushort),
+        ("hci_dev",         c_ushort),
+        ("hci_channel",     c_ushort),
+    ]
+
+class BTSocketError(BaseException):
+    pass
+class BlueSocket():
+    AF_BLUETOOTH = 31
+    SOCK_RAW = 3
+    HCI_CHANNEL_USER =1
+
+    def __init__(self):
+
+        #  using python socket/bind implementation for HCI is not working
+        # s = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_RAW, socket.BTPROTO_HCI)
+        # s.bind((0,1))
+
+        # call direct into the c library to create a socket instead of using python implementation
+        sockaddr_hcip = POINTER(sockaddr_hci)
+        cdll.LoadLibrary("libc.so.6")
+        libc = CDLL("libc.so.6")
+        #define functions and variables to libc
+        socket_c = libc.socket
+        socket_c.argtypes = (c_int, c_int, c_int);
+        socket_c.restype = c_int
+
+        bind = libc.bind
+        bind.argtypes = (c_int, POINTER(sockaddr_hci), c_int)
+        bind.restype = c_int
+
+        errno = libc.errno
+
+        strerror = libc.perror
+        strerror.restype = c_char_p
+
+        #create socket with direct libc call
+        sock = socket_c(self.AF_BLUETOOTH, self.SOCK_RAW, self.HCI_CHANNEL_USER)
+        if sock < 0:
+            raise BTSocketError("Unable to open AF_BLUETOOTH socket")
+
+        sa = sockaddr_hci()
+        sa.sin_family = self.AF_BLUETOOTH
+        sa.hci_dev = 0  # use always device id 0
+        sa.hci_channel = self.HCI_CHANNEL_USER  #use HCI_CHANNEL_USER do not interfer with bluetooth stack
+
+        r = bind(sock, sockaddr_hcip(sa), sizeof(sa))
+        if r != 0:
+            error = strerror(errno)
+            raise BTSocketError("Unable to bind: %s" % error)
+        #dublicate file descriptor fd and build a socket object
+        self.s = socket.fromfd(sock, self.AF_BLUETOOTH, self.SOCK_RAW, self.HCI_CHANNEL_USER)
+
+    def send(self, cmd):
+        self.send(cmd)
+        done = False
+        # TODO refactor HCI event handler
+        while not done:
+            pkt = self.recv()
+            ptype, event, plen = struct.unpack("BBB", pkt[:3])
+            if (ptype == bt.HCI_EVENT_PKT):
+                if event == bt.EVT_CMD_STATUS:
+                    logging.info("EVT_CMD_STATUS")
+
+                elif event == bt.EVT_CONN_COMPLETE:
+                    logging.info("EVT_CONN_COMPLETE")
+                    done = True
+
+                elif event == bt.EVT_DISCONN_COMPLETE:
+                    logging.info("EVT_DISCONN_COMPLETE")
+                    done = True
+
+                elif event == bt.EVT_CMD_COMPLETE:
+                    logging.info("EVT_CMD_COMPLETE")
+                    done = True
+
+                elif event == bt.EVT_ROLE_CHANGE:
+                    logging.info("EVT_ROLE_CHANGE")
+                    # done = True
+
+                elif event == bt.EVT_MODE_CHANGE:
+                    logging.info("EVT_MODE_CHANGE")
+                    # done = True
+
+                elif event == 0x1B:
+                    logging.info("MAX_SLOTS_CHANGE")
+                    # done = True
+
+                elif event == 0x20:
+                    logging.info("PAGE_SCAN_REPETITION_MODE_CHANGE")
+                    # done = True
+
+                else:
+                    logging.warning("unexpected Event")
+            if (ptype == bt.HCI_ACLDATA_PKT):
+                logging.info("ACL paket")
+                # done = True
+
+        return '00'
+
+    def recv(self, x=512):
+        return self.s.recv(x)
+
+    def send(self, x):
+        return self.s.send(x)
+    def settimeout(self, timeout):
+        #TODO replace with real timeout
+        logging.info("set dummy socket timeout")
+
 
 ########################################################################################################################
 class target:
@@ -209,6 +329,9 @@ class session (pgraph.graph):
         elif self.proto == "udp":
             self.proto = socket.SOCK_DGRAM
 
+        elif self.proto == "bluetooth":
+            self.proto = socket.SOCK_RAW
+
         else:
             raise sex.SullyRuntimeError("INVALID PROTOCOL SPECIFIED: %s" % self.proto)
 
@@ -223,6 +346,9 @@ class session (pgraph.graph):
         self.last_recv  = None
 
         self.add_node(self.root)
+
+        # init HCI RAW bluetooth socket
+        self.bluetoothSocket = BlueSocket().s
 
 
     ####################################################################################################################
@@ -461,8 +587,9 @@ class session (pgraph.graph):
 
                         try:
                             # establish a connection to the target.
-                            (family, socktype, proto, canonname, sockaddr)=socket.getaddrinfo(target.host, target.port)[0]
-                            sock = socket.socket(family, self.proto)
+                            #(family, socktype, proto, canonname, sockaddr)=socket.getaddrinfo(target.host, target.port)[0]
+                            #sock = socket.socket(family, self.proto)
+                            sock = self.bluetoothSocket.dup()
                         except Exception, e:
                             error_handler(e, "failed creating socket", target)
                             continue
@@ -873,6 +1000,8 @@ class session (pgraph.graph):
         try:
             if self.proto == socket.SOCK_STREAM:
                 sock.send(data)
+            if self.proto == socket.SOCK_RAW:
+                sock.send(data)
             else:
                 sock.sendto(data, (self.targets[0].host, self.targets[0].port))
             self.logger.debug("Packet sent : " + repr(data))
@@ -881,6 +1010,11 @@ class session (pgraph.graph):
 
         if self.proto == (socket.SOCK_STREAM or socket.SOCK_DGRAM):
             # TODO: might have a need to increase this at some point. (possibly make it a class parameter)
+            try:
+                self.last_recv = sock.recv(10000)
+            except Exception, e:
+                self.last_recv = ""
+        if self.proto == socket.SOCK_RAW:
             try:
                 self.last_recv = sock.recv(10000)
             except Exception, e:

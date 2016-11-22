@@ -23,8 +23,7 @@ Well a good place to start if you're on windows is the [wiki article on Windows 
 that, but if you use *nix, chances are you can probably figure it out on your own.
 
 # Some notes
-This master branch is considered the 'stable' branch of Sulley 1.0, all the changes that I make are going into Sulley 
-1.1, which can be found at https://github.com/OpenRCE/sulley/tree/Sulley1.1. 
+This is a fork of the orginal sulley framework which is adapted for bluetooth fuzzing. It use a HCI RAW socket communication which enables full controle of L2CAP and all layers above.
 
-If you have any other questions/improvements/features you'd like to see feel free to [email me](https://github.com/Fitblip)!
+If you have any other questions/improvements/features you'd like to see feel free to [email me](https://github.com/FlorianPuffer)!
 

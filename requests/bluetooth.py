@@ -164,13 +164,6 @@ s_block_end()
 ########################################################################################################################
 
 
-
-
-
-
-
-
-
 ########################################################################################################################
 s_initialize("le_sent_connection_parameter_update")
 s_block_start("read", encoder=rpc_request_encoder)
@@ -197,23 +190,296 @@ s_block_end()
 ########################################################################################################################
 
 ########################################################################################################################
-s_initialize("le_test_block")
+s_initialize("le_read_req_003c")
 
 s_static("\x02")                                                                          #HCI ACL Type
 s_static("\x48\x20")                                                                      #Create connection opcode
 
-s_size("ParamterLength", length=2)                                                         #Parameter total length Length
+s_size("l2cap", length=2)                                                         #Parameter total length Length
 
-if s_block_start("ParamterLength"):
+if s_block_start("l2cap"):
     #L2CAP
-    s_static("\x07\x00")                                                                      #L2CAP payload length
+    s_static("\x03\x00")                                                                      #L2CAP payload length
     s_static("\x04\x00")                                                                      #CID: Attribute Protocol
 
     #Bluetooth Attribute Prtocol
-    s_byte("\x10", fuzzable=True)                                                             #Opcode
-    s_static("\x01\x00")                                                                      #Starting Handle: 0x0001
-    s_static("\xff\xff")                                                                      #Ending Handle: 0xFFFF
-    s_static("\x00\x28")                                                                      #UUID: GATT Primary Service Declaration
+    s_byte("\x0a")                                                             #Opcode
+    s_word("\x3c\x00", fuzzable= True)                                                                      #Starting Handle: 0x0001
+s_block_end()
+
+
+########################################################################################################################
+
+
+########################################################################################################################
+s_initialize("le_handle_value_notification")
+
+s_static("\x02")                                                                          #HCI ACL Type
+s_static("\x48\x20", name="connection_handler_id")                                                                      #Create connection opcode
+
+s_size("l2cap", length=2)                                                         #Parameter total length Length
+
+if s_block_start("l2cap"):
+    #L2CAP
+    s_word("\x01\x00", fuzzable= False)                                                       #L2CAP payload length
+    s_static("\x04\x00")                                                                      #CID: Attribute Protocol
+
+    #Bluetooth Attribute Prtocol
+    s_byte([0x02, 0x03, 0x04, 0x05], fuzzable= True)                                                          #Opcode (x1b)
+    s_word("\x3c\x00", fuzzable= False)                                                            #Starting Handle: 0x0001
+    s_static("\x61\x61\x61\x61")
+s_block_end()
+
+
+########################################################################################################################
+
+########################################################################################################################
+s_initialize("le_read_by_groupe_Type_response_LintLength2")
+
+s_static("\x02")                                                                # HCI ACL Type
+s_static("\x48\x00")                                                            # Connection Handle
+
+s_size("l2cap", length=2)                                                       # Data total length Length
+
+if s_block_start("l2cap"):
+    #L2CAP
+    s_static("\x0E\x00")                                                        # L2CAP payload length
+    s_static("\x04\x00")                                                        # CID: Attribute Protocol
+
+    #Bluetooth Attribute Prtocol
+    s_byte([0x11])                                                              # Opcode: Read by Group type reponse
+    s_byte("\x06", fuzzable= False)                                             # Length
+    #Bluetooth attribute Data
+    s_word("\x01\x00", fuzzable=False)                                          # Generic Attribute Profile
+    s_word("\x05\x00", fuzzable=False)                                          # Group End Handle
+    s_word("\x01\x18", fuzzable=False)                                          # UUID: Generic Attribute Profile
+    # Bluetooth attribute Data
+    s_word("\x14\x00", fuzzable=False)                                          # Generic Access Profile
+    s_word("\xFF\xFF", fuzzable=False)                                          # Group End Handle
+    s_word("\x00\x18", fuzzable=False)                                          # UUID: Generic Access Profile
+s_block_end()
+
+
+########################################################################################################################
+
+########################################################################################################################
+s_initialize("le_read_by_type_response_Attribute_List_length_1")
+
+s_static("\x02")                                                                # HCI ACL Type
+s_static("\x48\x00")                                                            # Connection Handle
+
+s_size("l2cap", length=2)                                                       # Data total length Length
+
+if s_block_start("l2cap"):
+    #L2CAP
+    s_static("\x09\x00")                                                        # L2CAP payload length
+    s_static("\x04\x00")                                                        # CID: Attribute Protocol
+
+    #Bluetooth Attribute Prtocol
+    s_byte([0x09])                                                              # Opcode: Read by Group type reponse
+    s_byte("\x07", fuzzable= False)                                             # Length
+    #Attribute Data
+    s_word("\x02\x00", fuzzable=False)                                          # Handle
+    s_byte("\x20", fuzzable=False)                                              # Characteristic Properties
+    s_word("\x03\x00", fuzzable=False)                                          # Charaterisitic Value Handle
+    s_word("\x05\x2A", fuzzable=False)                                          # UUID: Service changed
+
+s_block_end()
+
+
+########################################################################################################################
+
+########################################################################################################################
+s_initialize("le_send_error_response_Attribute_not_found_Handle_0x0001")
+
+s_static("\x02")                                                                # HCI ACL Type
+s_static("\x48\x00")                                                            # Connection Handle
+
+s_size("l2cap", length=2)                                                       # Data total length Length
+
+if s_block_start("l2cap"):
+    #L2CAP
+    s_static("\x05\x00")                                                        # L2CAP payload length
+    s_static("\x04\x00")                                                        # CID: Attribute Protocol
+
+    #Bluetooth Attribute Prtocol
+    s_byte([0x01])                                                              # Opcode: Error Response
+    s_byte("\x08", fuzzable= False)                                             # Request Opcode in Error:Read by Type Request
+    s_word("\xFF\xFF", fuzzable=False, name = "handle_id")                                          # Handle in Error: 0x0001
+    s_byte("\x0A", fuzzable=False)                                              # Error Code: Attribute not found
+
+s_block_end()
+
+
+########################################################################################################################
+
+########################################################################################################################
+s_initialize("le_send_error_response_Attribute_not_found_Handle_0x0003")
+
+s_static("\x02")                                                                # HCI ACL Type
+s_static("\x48\x00")                                                            # Connection Handle
+
+s_size("l2cap", length=2)                                                       # Data total length Length
+
+if s_block_start("l2cap"):
+    #L2CAP
+    s_static("\x05\x00")                                                        # L2CAP payload length
+    s_static("\x04\x00")                                                        # CID: Attribute Protocol
+
+    #Bluetooth Attribute Prtocol
+    s_byte([0x01])                                                              # Opcode: Error Response
+    s_byte("\x08", fuzzable= False)                                             # Request Opcode in Error:Read by Type Request
+    s_word("\x03\x00", fuzzable=False, name = "handle_id")                                          # Handle in Error: 0x0001
+    s_byte("\x0A", fuzzable=False)                                              # Error Code: Attribute not found
+
+s_block_end()
+
+
+########################################################################################################################
+
+########################################################################################################################
+s_initialize("le_send_error_response_Attribute_not_found_Handle_0x0004")
+
+s_static("\x02")                                                                # HCI ACL Type
+s_static("\x48\x00")                                                            # Connection Handle
+
+s_size("l2cap", length=2)                                                       # Data total length Length
+
+if s_block_start("l2cap"):
+    #L2CAP
+    s_static("\x05\x00")                                                        # L2CAP payload length
+    s_static("\x04\x00")                                                        # CID: Attribute Protocol
+
+    #Bluetooth Attribute Prtocol
+    s_byte([0x01])                                                              # Opcode: Error Response
+    s_byte("\x04", fuzzable= False)                                             # Request Opcode in Error: Find Information Request
+    s_word("\x04\x00", fuzzable=False, name = "handle_id")                      # Handle in Error: 0x0001
+    s_byte("\x0A", fuzzable=False)                                              # Error Code: Attribute not found
+
+s_block_end()
+
+
+########################################################################################################################
+
+########################################################################################################################
+s_initialize("le_send_error_response_Attribute_not_found_Handle_0x0014")
+
+s_static("\x02")                                                                # HCI ACL Type
+s_static("\x48\x00")                                                            # Connection Handle
+
+s_size("l2cap", length=2)                                                       # Data total length Length
+
+if s_block_start("l2cap"):
+    #L2CAP
+    s_static("\x05\x00")                                                        # L2CAP payload length
+    s_static("\x04\x00")                                                        # CID: Attribute Protocol
+
+    #Bluetooth Attribute Prtocol
+    s_byte([0x01])                                                              # Opcode: Error Response
+    s_byte("\x04", fuzzable= False)                                             # Request Opcode in Error: Find Information Request
+    s_word("\x04\x00", fuzzable=False, name = "handle_id")                      # Handle in Error: 0x0001
+    s_byte("\x0A", fuzzable=False)                                              # Error Code: Attribute not found
+
+s_block_end()
+
+
+########################################################################################################################
+
+########################################################################################################################
+s_initialize("le_sent_Connection_Parameter_Update_Response")
+
+s_static("\x02")                                                                # HCI ACL Type
+s_static("\x48\x00", name="connection_handler_id")                                                            # Connection Handle
+
+s_size("l2cap", length=2)                                                       # Data total length Length
+
+if s_block_start("l2cap"):
+    #L2CAP
+    s_static("\x06\x00")                                                        # L2CAP payload length
+    s_static("\x05\x00")                                                        # CID: Conenction Parameter Update Response
+
+    #Connection Paramter Update Response
+    s_byte([0x13])                                                              # Command Code: Connection Paramter Update Response
+    s_byte("\x02", fuzzable= False)                                             # Command Identifier
+    s_word("\x02\x00", fuzzable=False, name = "Command Length")                      # Handle in Error: 0x0001
+    s_word("\x00\x00", fuzzable=False, name = "Move Result")                                              # Error Code: Attribute not found
+
+s_block_end()
+
+
+########################################################################################################################
+
+
+########################################################################################################################
+s_initialize("le_write_nxp_qpps")
+
+s_static("\x02")                                                                # HCI ACL Type
+s_static("\x48\x00", name="connection_handler_id")                              # Connection Handle
+
+s_size("l2cap", length=2)                                                       # Data total length Length
+
+if s_block_start("l2cap"):
+    #L2CAP
+    s_size("attribute_protocol", length=2)                                      # L2CAP payload length
+    s_static("\x04\x00")                                                        # CID: Attribute Protocol
+
+    if s_block_start("attribute_protocol"):
+        #Connection Paramter Update Response
+        s_byte([0x12])                                                              # Command Code: Write Request
+        s_word("\x12\x00", fuzzable=False, name = "Handle")
+        if s_block_start("data"):
+            s_byte([0x41], fuzzable=False)
+        s_block_end("data")
+        s_repeat("data", min_reps=100, max_reps=1000, step=1)
+    s_block_end("attribute_protocol")
+s_block_end()
+
+
+########################################################################################################################
+
+########################################################################################################################
+s_initialize("le_write_nxp_qpps_bug_trigger")
+
+s_static("\x02")                                                                # HCI ACL Type
+s_static("\x48\x00", name="connection_handler_id")                              # Connection Handle
+
+s_size("l2cap", length=2)                                                       # Data total length Length
+
+if s_block_start("l2cap"):
+    #L2CAP
+    s_size("attribute_protocol", length=2)                                      # L2CAP payload length
+    s_static("\x04\x00")                                                        # CID: Attribute Protocol
+
+    if s_block_start("attribute_protocol"):
+        #Connection Paramter Update Response
+        s_byte([0x12])                                                              # Command Code: Write Request
+        s_word("\x12\x00", fuzzable=False, name = "Handle")
+        if s_block_start("data"):
+            s_byte([0x41], fuzzable=False)
+            s_byte([0x41], fuzzable=False)
+            s_byte([0x41], fuzzable=False)
+            s_byte([0x41], fuzzable=False)
+            s_byte([0x41], fuzzable=False)
+            s_byte([0x41], fuzzable=False)
+            s_byte([0x41], fuzzable=False)
+            s_byte([0x41], fuzzable=False)
+            s_byte([0x41], fuzzable=False)
+            s_byte([0x41], fuzzable=False)
+
+            s_byte([0x42], fuzzable=False)
+            s_byte([0x42], fuzzable=False)
+            s_byte([0x42], fuzzable=False)
+            s_byte([0x42], fuzzable=False)
+            s_byte([0x42], fuzzable=False)
+
+            s_byte([0x43], fuzzable=False)
+            s_byte([0x43], fuzzable=False)
+            s_byte([0x43], fuzzable=False)
+            s_byte([0x43], fuzzable=False)
+            s_byte([0x43], fuzzable=False)
+        s_block_end("data")
+        #s_repeat("data", min_reps=6, max_reps=6, step=1)
+    s_block_end("attribute_protocol")
 s_block_end()
 
 
